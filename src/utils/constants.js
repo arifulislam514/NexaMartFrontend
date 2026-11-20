@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
     VERIFY: '/auth/jwt/verify/',
     CURRENT_USER: '/auth/users/me/',
     SET_PASSWORD: '/auth/users/set_password/',
+    ACTIVATION: '/auth/users/activation/',
   },
 
   // Categories
