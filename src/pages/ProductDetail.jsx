@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ChevronRight,
   ArrowLeft,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import useProductDetails from '../hooks/useProductDetails';
 import useAuth from '../hooks/useAuth';
+import useCart from '../hooks/useCart';
 import ProductImageGallery from '../components/ProductDetails/ProductImageGallery';
 import ProductInfo from '../components/ProductDetails/ProductInfo';
 import ReviewSection from '../components/Reviews/ReviewSection';
@@ -27,7 +28,9 @@ import productService from '../services/productService';
  */
 const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
 
   const [activeTab, setActiveTab] = useState('description');
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -203,9 +206,11 @@ const ProductDetail = () => {
             product={product}
             averageRating={averageRating}
             totalReviews={totalReviews}
-            onAddToCart={(prod, qty) => {
-              // Cart addition hook logic will be connected in Phase 6
-              console.log('Added to cart:', prod.name, 'Quantity:', qty);
+            onAddToCart={async (prod, qty) => {
+              const res = await addToCart(prod, qty);
+              if (res?.requireAuth) {
+                navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+              }
             }}
           />
         </div>
@@ -387,8 +392,11 @@ const ProductDetail = () => {
               <ProductCard
                 key={item.id}
                 product={item}
-                onAddToCart={(prod) => {
-                  console.log('Added related product to cart:', prod.name);
+                onAddToCart={async (prod) => {
+                  const res = await addToCart(prod, 1);
+                  if (res?.requireAuth) {
+                    navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+                  }
                 }}
               />
             ))}

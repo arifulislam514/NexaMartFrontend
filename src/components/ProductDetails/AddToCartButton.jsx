@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCart, Check, Loader2 } from 'lucide-react';
+import useCart from '../../hooks/useCart';
+import useAuth from '../../hooks/useAuth';
 
 /**
  * AddToCartButton Component
  * Primary Action button for adding products to cart matching nexamart_app.tsx design.
- * UI is fully built now; cart state synchronization will be connected in Phase 6.
+ * Directly connected to CartContext with auth check, loading feedback, and live badge sync.
  *
  * @param {Object} props
  * @param {Object} props.product - Product object
  * @param {number} [props.quantity=1] - Quantity to add
  * @param {boolean} [props.disabled=false] - External disabled override
- * @param {boolean} [props.loading=false] - Loading spinner state
- * @param {Function} [props.onClick] - Click handler: (product, quantity) => void
+ * @param {boolean} [props.loading=false] - External loading spinner override
+ * @param {Function} [props.onClick] - Optional custom click handler: (product, quantity) => Promise<void>|void
  * @param {'sm'|'md'|'lg'} [props.size='lg'] - Button size
  * @param {boolean} [props.showIcon=true] - Display ShoppingCart icon
  * @param {string} [props.className='']
@@ -20,15 +23,22 @@ const AddToCartButton = ({
   product,
   quantity = 1,
   disabled = false,
-  loading = false,
+  loading: externalLoading = false,
   onClick,
   size = 'lg',
   showIcon = true,
   className = '',
 }) => {
+  const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [isSuccess, setIsSuccess] = useState(false);
+  const [internalLoading, setInternalLoading] = useState(false);
 
   const isOutOfStock = Boolean(product?.stock === 0) || disabled;
+  const isLoading = externalLoading || internalLoading;
 
   const sizeClasses = {
     sm: 'h-10 px-4 text-xs font-semibold rounded-xl',
@@ -45,19 +55,48 @@ const AddToCartButton = ({
   const currentSizeClass = sizeClasses[size] || sizeClasses.lg;
   const currentIconSize = iconSizes[size] || iconSizes.lg;
 
-  const handleClick = (e) => {
+  const handleClick = async (e) => {
     e.preventDefault();
-    if (isOutOfStock || loading) return;
+    e.stopPropagation();
+    if (isOutOfStock || isLoading) return;
 
+    // If custom handler was passed by parent, call it
     if (onClick) {
-      onClick(product, quantity);
+      try {
+        setInternalLoading(true);
+        await onClick(product, quantity);
+        setIsSuccess(true);
+        setTimeout(() => setIsSuccess(false), 2000);
+      } catch (err) {
+        console.error('Custom onAddToCart handler failed:', err);
+      } finally {
+        setInternalLoading(false);
+      }
+      return;
     }
 
-    // Temporary visual success feedback
-    setIsSuccess(true);
-    setTimeout(() => {
-      setIsSuccess(false);
-    }, 2000);
+    // Default built-in cart context handling
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
+      return;
+    }
+
+    setInternalLoading(true);
+    try {
+      const result = await addToCart(product, quantity);
+      if (result?.success) {
+        setIsSuccess(true);
+        setTimeout(() => {
+          setIsSuccess(false);
+        }, 2000);
+      } else if (result?.requireAuth) {
+        navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
+      }
+    } catch (err) {
+      console.error('Failed to add product to cart:', err);
+    } finally {
+      setInternalLoading(false);
+    }
   };
 
   if (isOutOfStock) {
@@ -77,7 +116,7 @@ const AddToCartButton = ({
     <button
       type="button"
       onClick={handleClick}
-      disabled={loading}
+      disabled={isLoading}
       className={`w-full flex items-center justify-center gap-2.5 transition-all shadow-md active:scale-[0.99] select-none ${
         isSuccess
           ? 'bg-emerald-600 text-white shadow-emerald-500/20'
@@ -85,7 +124,7 @@ const AddToCartButton = ({
       } ${currentSizeClass} ${className}`}
       aria-label={`Add ${quantity} ${product?.name || 'item'} to cart`}
     >
-      {loading ? (
+      {isLoading ? (
         <>
           <Loader2 className={`${currentIconSize} animate-spin`} />
           <span>Adding to Cart...</span>

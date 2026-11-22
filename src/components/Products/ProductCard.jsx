@@ -1,19 +1,30 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { ShoppingCart, Check, Loader2 } from 'lucide-react';
 import StarRating from '../Common/StarRating';
 import { formatPrice } from '../../utils/formatters';
 import productService from '../../services/productService';
+import useCart from '../../hooks/useCart';
+import useAuth from '../../hooks/useAuth';
 
 /**
  * ProductCard Component
- * Strictly replicates nexamart_app.tsx design with ৳ (Taka) currency formatting and DRF API integration.
+ * Strictly replicates nexamart_app.tsx design with ৳ (Taka) currency formatting,
+ * DRF API integration, and direct CartContext connectivity.
  *
  * @param {Object} props
  * @param {Object} props.product - Product data object from Django API
- * @param {Function} [props.onAddToCart] - Cart addition callback
+ * @param {Function} [props.onAddToCart] - Optional external cart addition callback
  */
 const ProductCard = ({ product, onAddToCart }) => {
+  const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState(false);
+
   if (!product) return null;
 
   const isOutOfStock = product.stock === 0;
@@ -29,11 +40,36 @@ const ProductCard = ({ product, onAddToCart }) => {
   const ratingValue = product.rating !== undefined ? Number(product.rating) : 4.8;
   const reviewsCount = product.reviews !== undefined ? product.reviews : (product.reviews_count || 0);
 
-  const handleAddToCartClick = (e) => {
+  const handleAddToCartClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isOutOfStock && onAddToCart) {
-      onAddToCart(product);
+    if (isOutOfStock || adding) return;
+
+    if (onAddToCart) {
+      await onAddToCart(product);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1500);
+      return;
+    }
+
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const result = await addToCart(product, 1);
+      if (result?.success) {
+        setAdded(true);
+        setTimeout(() => setAdded(false), 1500);
+      } else if (result?.requireAuth) {
+        navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
+      }
+    } catch (err) {
+      console.error('Failed to add product from card:', err);
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -110,15 +146,24 @@ const ProductCard = ({ product, onAddToCart }) => {
           <button
             type="button"
             onClick={handleAddToCartClick}
-            disabled={isOutOfStock}
+            disabled={isOutOfStock || adding}
             className={`p-2.5 rounded-xl flex items-center justify-center transition-all ${
               isOutOfStock
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : added
+                ? 'bg-emerald-50 text-emerald-600 scale-105 shadow-xs'
                 : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white active:scale-95 shadow-xs'
             }`}
             aria-label={`Add ${product.name} to cart`}
+            title={isOutOfStock ? 'Out of stock' : 'Add to cart'}
           >
-            <ShoppingCart className="w-5 h-5" />
+            {adding ? (
+              <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+            ) : added ? (
+              <Check className="w-5 h-5 text-emerald-600 animate-scale-up" />
+            ) : (
+              <ShoppingCart className="w-5 h-5" />
+            )}
           </button>
         </div>
       </div>
