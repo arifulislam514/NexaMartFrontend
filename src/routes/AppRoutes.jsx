@@ -21,6 +21,11 @@ import Checkout from '../pages/Checkout';
 import Orders from '../pages/Orders';
 import Profile from '../pages/Profile';
 
+// Payment Status Pages
+import PaymentSuccess from '../pages/PaymentSuccess';
+import PaymentFail from '../pages/PaymentFail';
+import PaymentCancel from '../pages/PaymentCancel';
+
 // Admin Protected Pages
 import Dashboard from '../pages/Dashboard';
 
@@ -46,6 +51,11 @@ const AppRoutes = () => {
         <Route path="/shop" element={<Navigate to="/products" replace />} />
         <Route path="/products/:id" element={<ProductDetail />} />
         <Route path="/about" element={<About />} />
+
+        {/* Payment Callback Pages */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/fail" element={<PaymentFail />} />
+        <Route path="/payment/cancel" element={<PaymentCancel />} />
 
         {/* Customer Protected Routes */}
         <Route element={<PrivateRoute />}>
