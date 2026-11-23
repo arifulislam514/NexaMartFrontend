@@ -37,18 +37,13 @@ const Shop = () => {
     return matched ? matched.id : '';
   }, [categoryParam, getCategoryByName]);
 
-  // Products custom hook
+  // Products custom hook synced directly with URL query parameters
   const {
     products,
     count,
     loading,
     error,
     currentPage,
-    setPage,
-    setSearch,
-    setCategory,
-    setOrdering,
-    setPriceRange,
     resetFilters,
     refetch,
   } = useProducts({
@@ -59,27 +54,6 @@ const Shop = () => {
     price__gt: minPriceParam,
     price__lt: maxPriceParam,
   });
-
-  // Keep hook in sync when URL search params change
-  useEffect(() => {
-    setSearch(searchParam);
-    setCategory(resolvedCategoryId);
-    setOrdering(sortParam);
-    setPage(pageParam);
-    setPriceRange(minPriceParam, maxPriceParam);
-  }, [
-    searchParam,
-    resolvedCategoryId,
-    sortParam,
-    pageParam,
-    minPriceParam,
-    maxPriceParam,
-    setSearch,
-    setCategory,
-    setOrdering,
-    setPage,
-    setPriceRange,
-  ]);
 
   // Update URL helper
   const updateParams = (newParams) => {
@@ -219,7 +193,7 @@ const Shop = () => {
           {!loading && count > 0 && (
             <div className="mt-10">
               <Pagination
-                currentPage={currentPage}
+                currentPage={pageParam || currentPage}
                 totalCount={count}
                 onPageChange={handlePageChange}
               />

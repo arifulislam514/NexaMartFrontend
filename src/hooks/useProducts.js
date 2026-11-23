@@ -28,6 +28,25 @@ export const useProducts = (initialFilters = {}) => {
     price__lt: defaultFilterValues.price__lt || '',
   });
 
+  // Synchronize internal filter state whenever caller props change
+  useEffect(() => {
+    setFilters({
+      page: defaultFilterValues.page || 1,
+      search: defaultFilterValues.search || '',
+      category_id: defaultFilterValues.category_id || '',
+      ordering: defaultFilterValues.ordering || '',
+      price__gt: defaultFilterValues.price__gt || '',
+      price__lt: defaultFilterValues.price__lt || '',
+    });
+  }, [
+    defaultFilterValues.page,
+    defaultFilterValues.search,
+    defaultFilterValues.category_id,
+    defaultFilterValues.ordering,
+    defaultFilterValues.price__gt,
+    defaultFilterValues.price__lt,
+  ]);
+
   const [products, setProducts] = useState([]);
   const [count, setCount] = useState(0);
   const [next, setNext] = useState(null);
