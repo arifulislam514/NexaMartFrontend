@@ -186,6 +186,15 @@ const Navbar = ({ cartCount }) => {
                   )}
 
                   <Link
+                    to="/profile"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center gap-2.5 transition-colors"
+                  >
+                    <User className="w-4 h-4 text-slate-400" />
+                    <span>My Profile</span>
+                  </Link>
+
+                  <Link
                     to="/orders"
                     onClick={() => setIsUserMenuOpen(false)}
                     className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center gap-2.5 transition-colors"
