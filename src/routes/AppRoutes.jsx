@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // Layouts
 import MainLayout from '../layouts/MainLayout';
 import AuthLayout from '../layouts/AuthLayout';
+import DashboardLayout from '../layouts/DashboardLayout';
 
 // Route Protectors
 import PrivateRoute from '../components/Common/PrivateRoute';
@@ -28,6 +29,8 @@ import PaymentCancel from '../pages/PaymentCancel';
 
 // Admin Protected Pages
 import Dashboard from '../pages/Dashboard';
+import ManageProducts from '../components/Dashboard/Admin/ManageProducts';
+import ManageOrders from '../components/Dashboard/Admin/ManageOrders';
 
 // Auth Pages
 import Login from '../pages/Login';
@@ -79,8 +82,12 @@ const AppRoutes = () => {
 
       {/* Admin Protected Routes under AdminRoute */}
       <Route element={<AdminRoute />}>
-        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route element={<DashboardLayout />}>
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/dashboard" element={<Dashboard />} />
+          <Route path="/admin/products" element={<ManageProducts />} />
+          <Route path="/admin/orders" element={<ManageOrders />} />
+        </Route>
       </Route>
 
       {/* Catch-all Fallback */}
