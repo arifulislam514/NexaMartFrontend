@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Star, MessageSquarePlus, Check } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Star, MessageSquarePlus, CheckCircle2, X } from 'lucide-react';
 import StarRating from '../Common/StarRating';
 import ReviewList from './ReviewList';
 import ReviewForm from './ReviewForm';
@@ -33,9 +33,10 @@ const ReviewSection = ({
 }) => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
+  const [feedbackMessage, setFeedbackMessage] = useState(null);
 
   // Compute breakdown of 1-5 star ratings for progress bars
-  const ratingDistribution = React.useMemo(() => {
+  const ratingDistribution = useMemo(() => {
     const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     if (!reviews || reviews.length === 0) return counts;
 
@@ -47,35 +48,88 @@ const ReviewSection = ({
     return counts;
   }, [reviews]);
 
+  const effectiveTotal = Math.max(totalReviews, reviews?.length || 0);
+
+  const handleReviewSubmit = async (data) => {
+    if (onSubmitReview) {
+      await onSubmitReview(data);
+      setShowReviewForm(false);
+      setFeedbackMessage({
+        type: 'success',
+        text: 'Thank you! Your review has been submitted successfully.',
+      });
+      setTimeout(() => setFeedbackMessage(null), 5000);
+    }
+  };
+
   const handleEditSubmit = async (reviewId, updatedData) => {
     if (onUpdateReview) {
       await onUpdateReview(reviewId, updatedData);
+      setFeedbackMessage({
+        type: 'success',
+        text: 'Your review has been updated successfully.',
+      });
+      setTimeout(() => setFeedbackMessage(null), 4000);
     }
     setEditingReview(null);
   };
 
+  const handleDeleteReview = async (reviewId) => {
+    if (onDeleteReview) {
+      await onDeleteReview(reviewId);
+      setFeedbackMessage({
+        type: 'success',
+        text: 'Review deleted successfully.',
+      });
+      setTimeout(() => setFeedbackMessage(null), 4000);
+    }
+  };
+
   return (
     <div className="space-y-8">
+      {/* Toast / Feedback Banner */}
+      {feedbackMessage && (
+        <div
+          className={`p-4 rounded-2xl flex items-center justify-between shadow-2xs border animate-fade-in ${
+            feedbackMessage.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <span className="text-sm font-semibold">{feedbackMessage.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedbackMessage(null)}
+            className="text-slate-400 hover:text-slate-700 p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Rating Summary Card */}
       <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-6 sm:p-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
           {/* Average Score */}
           <div className="md:col-span-4 flex flex-col items-center md:items-start text-center md:text-left border-b md:border-b-0 md:border-r border-slate-200 pb-6 md:pb-0 md:pr-8">
             <span className="text-5xl font-black text-slate-900 tracking-tight mb-2">
-              {averageRating.toFixed(1)}
+              {Number(averageRating || 5).toFixed(1)}
             </span>
-            <StarRating rating={averageRating} size="md" showValue={false} className="mb-2" />
+            <StarRating rating={Number(averageRating || 5)} size="md" showValue={false} className="mb-2" />
             <p className="text-sm text-slate-500 font-medium">
-              Based on {totalReviews} {totalReviews === 1 ? 'verified review' : 'verified reviews'}
+              Based on {effectiveTotal} {effectiveTotal === 1 ? 'verified review' : 'verified reviews'}
             </p>
 
             <button
               type="button"
               onClick={() => setShowReviewForm((prev) => !prev)}
-              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-all shadow-sm active:scale-95"
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-all shadow-sm active:scale-95 cursor-pointer"
             >
               <MessageSquarePlus className="w-4 h-4" />
-              <span>{showReviewForm ? 'Close Form' : 'Write a Review'}</span>
+              <span>{showReviewForm ? 'Cancel Review' : 'Write a Review'}</span>
             </button>
           </div>
 
@@ -83,7 +137,7 @@ const ReviewSection = ({
           <div className="md:col-span-8 space-y-2.5">
             {[5, 4, 3, 2, 1].map((stars) => {
               const count = ratingDistribution[stars] || 0;
-              const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+              const percentage = effectiveTotal > 0 ? (count / effectiveTotal) * 100 : 0;
 
               return (
                 <div key={stars} className="flex items-center gap-3 text-xs sm:text-sm">
@@ -110,10 +164,7 @@ const ReviewSection = ({
       {showReviewForm && (
         <div className="animate-fade-in">
           <ReviewForm
-            onSubmit={async (data) => {
-              await onSubmitReview(data);
-              setShowReviewForm(false);
-            }}
+            onSubmit={handleReviewSubmit}
             isAuthenticated={isAuthenticated}
             onCancel={() => setShowReviewForm(false)}
           />
@@ -123,13 +174,13 @@ const ReviewSection = ({
       {/* Customer Reviews List */}
       <div>
         <h3 className="text-xl font-bold text-slate-900 mb-6">
-          Customer Reviews ({totalReviews})
+          Customer Reviews ({effectiveTotal})
         </h3>
 
         <ReviewList
           reviews={reviews}
           currentUser={currentUser}
-          onDeleteReview={onDeleteReview}
+          onDeleteReview={handleDeleteReview}
           onEditReview={(review) => setEditingReview(review)}
           loading={loading}
         />

@@ -13,6 +13,7 @@ import { formatPrice } from '../../utils/formatters';
  * @param {Object} props.product - Product data object from Django API
  * @param {number} [props.averageRating] - Average star rating
  * @param {number} [props.totalReviews] - Total reviews count
+ * @param {Function} [props.onReviewsClick] - Callback when star rating is clicked
  * @param {Function} [props.onAddToCart] - Callback when Add to Cart is clicked: (product, quantity) => void
  * @param {string} [props.className='']
  */
@@ -20,6 +21,7 @@ const ProductInfo = ({
   product,
   averageRating = 5,
   totalReviews = 0,
+  onReviewsClick,
   onAddToCart,
   className = '',
 }) => {
@@ -83,11 +85,26 @@ const ProductInfo = ({
 
       {/* Star Rating & Reviews Count */}
       <div className="flex items-center gap-3 mb-6">
-        <StarRating
-          rating={averageRating}
-          reviewsCount={totalReviews}
-          size="md"
-        />
+        {onReviewsClick ? (
+          <button
+            type="button"
+            onClick={onReviewsClick}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity text-left cursor-pointer group"
+            title="View customer reviews"
+          >
+            <StarRating
+              rating={averageRating}
+              reviewsCount={totalReviews}
+              size="md"
+            />
+          </button>
+        ) : (
+          <StarRating
+            rating={averageRating}
+            reviewsCount={totalReviews}
+            size="md"
+          />
+        )}
         <span className="text-xs text-slate-400 font-medium border-l border-slate-200 pl-3">
           Verified Quality
         </span>

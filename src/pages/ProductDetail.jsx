@@ -206,6 +206,13 @@ const ProductDetail = () => {
             product={product}
             averageRating={averageRating}
             totalReviews={totalReviews}
+            onReviewsClick={() => {
+              setActiveTab('reviews');
+              const tabsEl = document.getElementById('product-tabs-section');
+              if (tabsEl) {
+                tabsEl.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
             onAddToCart={async (prod, qty) => {
               const res = await addToCart(prod, qty);
               if (res?.requireAuth) {
@@ -217,7 +224,7 @@ const ProductDetail = () => {
       </div>
 
       {/* Details & Reviews Tabs */}
-      <div className="border-t border-slate-200 pt-10 mb-16">
+      <div id="product-tabs-section" className="border-t border-slate-200 pt-10 mb-16 scroll-mt-24">
         {/* Tab Headers */}
         <div className="flex space-x-8 mb-8 border-b border-slate-200">
           <button
@@ -237,13 +244,22 @@ const ProductDetail = () => {
           <button
             type="button"
             onClick={() => setActiveTab('reviews')}
-            className={`pb-4 text-lg font-bold transition-colors relative cursor-pointer ${
+            className={`pb-4 text-lg font-bold transition-colors relative cursor-pointer flex items-center gap-2 ${
               activeTab === 'reviews'
                 ? 'text-indigo-600'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            Reviews ({totalReviews})
+            <span>Reviews</span>
+            <span
+              className={`text-xs px-2.5 py-0.5 rounded-full font-bold transition-colors ${
+                activeTab === 'reviews'
+                  ? 'bg-indigo-100 text-indigo-700'
+                  : 'bg-slate-100 text-slate-500'
+              }`}
+            >
+              {totalReviews}
+            </span>
             {activeTab === 'reviews' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full" />
             )}
