@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import orderService from '../services/orderService';
-import useCart from './useCart';
+import cartService from '../services/cartService';
 
 /**
  * useOrders Hook
@@ -12,8 +12,6 @@ import useCart from './useCart';
  * @param {Object} [options.initialParams={}] - Optional filters/pagination parameters
  */
 export const useOrders = ({ autoFetch = true, initialParams = {} } = {}) => {
-  const { clearCart } = useCart();
-
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({
     count: 0,
@@ -24,14 +22,23 @@ export const useOrders = ({ autoFetch = true, initialParams = {} } = {}) => {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Keep a ref of initialParams to avoid recreating fetchOrders callback on every render
+  const initialParamsRef = useRef(initialParams);
+  const serializedInitialParams = JSON.stringify(initialParams || {});
+
+  useEffect(() => {
+    initialParamsRef.current = initialParams;
+  }, [serializedInitialParams]);
+
   /**
-   * Fetch all orders for the current user (or all if admin)
+   * Fetch all orders for the current user (or all if admin).
+   * Stable callback: does not re-create on every render.
    */
   const fetchOrders = useCallback(async (params = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const mergedParams = { ...initialParams, ...params };
+      const mergedParams = { ...(initialParamsRef.current || {}), ...params };
       const data = await orderService.getOrders(mergedParams);
 
       if (Array.isArray(data)) {
@@ -61,7 +68,7 @@ export const useOrders = ({ autoFetch = true, initialParams = {} } = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [initialParams]);
+  }, []);
 
   /**
    * Fetch single order detail by UUID
@@ -82,7 +89,6 @@ export const useOrders = ({ autoFetch = true, initialParams = {} } = {}) => {
 
   /**
    * Place an order from active cart (Checkout)
-   * On success, cleans up local cart state as backend automatically deleted it.
    *
    * @param {string} cartId - Cart UUID
    * @returns {Promise<Object>} Created order object
@@ -97,7 +103,11 @@ export const useOrders = ({ autoFetch = true, initialParams = {} } = {}) => {
       const formatted = orderService.formatOrder(rawOrder);
 
       // Clean local cart state since backend deleted the cart
-      await clearCart();
+      try {
+        cartService.clearStoredCartId();
+      } catch (err) {
+        console.warn('Failed to clear cart ID after order placement:', err);
+      }
 
       // Refresh orders list
       await fetchOrders();
@@ -188,12 +198,12 @@ export const useOrders = ({ autoFetch = true, initialParams = {} } = {}) => {
     }
   };
 
-  // Initial load
+  // Initial load: Only fires when autoFetch changes or serialized initialParams changes
   useEffect(() => {
     if (autoFetch) {
       fetchOrders();
     }
-  }, [autoFetch, fetchOrders]);
+  }, [autoFetch, fetchOrders, serializedInitialParams]);
 
   return {
     orders,
@@ -202,6 +212,7 @@ export const useOrders = ({ autoFetch = true, initialParams = {} } = {}) => {
     actionLoading,
     error,
     fetchOrders,
+    refetchOrders: fetchOrders,
     fetchOrder,
     placeOrder,
     cancelOrder,

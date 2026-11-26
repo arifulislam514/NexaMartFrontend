@@ -68,7 +68,7 @@ const Dashboard = () => {
     if (!Array.isArray(orders)) return 0;
     return orders
       .filter((o) => (o.status || '').toLowerCase() !== 'canceled')
-      .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+      .reduce((sum, o) => sum + (Number(o.total_price || o.total || 0) || 0), 0);
   }, [orders]);
 
   const pendingShipments = useMemo(() => {
@@ -94,11 +94,11 @@ const Dashboard = () => {
     const headers = ['Order ID', 'Customer', 'Date', 'Total (৳)', 'Status', 'Shipping Address'];
     const rows = orders.map((o) => [
       `"${o.id}"`,
-      `"${typeof o.user === 'object' ? o.user?.name || o.user?.email : o.user || 'Customer'}"`,
+      `"${typeof o.user === 'object' ? `${o.user?.first_name || ''} ${o.user?.last_name || ''}`.trim() || o.user?.name || o.user?.email || 'Customer' : (o.user ? `Customer #${o.user}` : 'Customer')}"`,
       `"${formatDate(o.created_at || o.date, { format: 'iso' })}"`,
-      `"${Number(o.total || 0).toFixed(2)}"`,
+      `"${Number(o.total_price ?? o.total ?? 0).toFixed(2)}"`,
       `"${o.status}"`,
-      `"${(o.shipping_address || o.address || '').replace(/"/g, '""')}"`,
+      `"${(o.shipping_address || o.address || o.user?.address || '').replace(/"/g, '""')}"`,
     ]);
 
     const csvContent =
@@ -241,9 +241,12 @@ const Dashboard = () => {
                 <tbody className="divide-y divide-slate-100">
                   {orders.slice(0, 6).map((order) => {
                     const customerName =
-                      typeof order.user === 'object' && order.user?.name
-                        ? order.user.name
-                        : order.user || 'Customer';
+                      typeof order.user === 'object'
+                        ? `${order.user?.first_name || ''} ${order.user?.last_name || ''}`.trim() ||
+                          order.user?.name ||
+                          order.user?.email ||
+                          'Customer'
+                        : order.user ? `Customer #${order.user}` : 'Customer';
 
                     const shortId = String(order.id).slice(0, 8);
 
@@ -263,7 +266,7 @@ const Dashboard = () => {
                           {formatDate(order.created_at || order.date, { format: 'medium' })}
                         </td>
                         <td className="px-6 py-4 font-bold text-slate-900 text-right">
-                          {formatPrice(order.total)}
+                          {formatPrice(order.total_price ?? order.total)}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <OrderStatusBadge status={order.status} size="sm" />
@@ -338,9 +341,8 @@ const Dashboard = () => {
                             {product.name}
                           </h4>
                           <p
-                            className={`text-xs font-bold ${
-                              isZero ? 'text-rose-600' : 'text-amber-600'
-                            }`}
+                            className={`text-xs font-bold ${isZero ? 'text-rose-600' : 'text-amber-600'
+                              }`}
                           >
                             {isZero ? 'Out of Stock' : `Only ${product.stock} left`}
                           </p>

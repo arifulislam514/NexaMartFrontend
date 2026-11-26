@@ -218,6 +218,7 @@ const ProductDetail = () => {
               if (res?.requireAuth) {
                 navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
               }
+              return res;
             }}
           />
         </div>

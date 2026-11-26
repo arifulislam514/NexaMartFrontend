@@ -87,9 +87,12 @@ const ManageOrders = ({ className = '' }) => {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter((o) => {
         const idMatch = String(o.id || '').toLowerCase().includes(q);
-        const customerName = typeof o.user === 'object' ? o.user?.name || o.user?.email : o.user;
-        const nameMatch = String(customerName || '').toLowerCase().includes(q);
-        const addressMatch = String(o.shipping_address || o.address || '').toLowerCase().includes(q);
+        const customerName =
+          typeof o.user === 'object'
+            ? `${o.user?.first_name || ''} ${o.user?.last_name || ''} ${o.user?.name || ''} ${o.user?.email || ''}`
+            : String(o.user || '');
+        const nameMatch = customerName.toLowerCase().includes(q);
+        const addressMatch = String(o.shipping_address || o.address || o.user?.address || '').toLowerCase().includes(q);
         return idMatch || nameMatch || addressMatch;
       });
     }
@@ -148,11 +151,11 @@ const ManageOrders = ({ className = '' }) => {
     const rows = filteredOrders.map((o) => [
       `"${o.id}"`,
       `"${formatDate(o.created_at || o.date, { format: 'iso' })}"`,
-      `"${typeof o.user === 'object' ? o.user?.name || o.user?.email : o.user || 'Customer'}"`,
+      `"${typeof o.user === 'object' ? `${o.user?.first_name || ''} ${o.user?.last_name || ''}`.trim() || o.user?.name || o.user?.email || 'Customer' : (o.user ? `Customer #${o.user}` : 'Customer')}"`,
       `"${o.status}"`,
       `"${Array.isArray(o.items) ? o.items.length : 0}"`,
-      `"${Number(o.total || 0).toFixed(2)}"`,
-      `"${(o.shipping_address || o.address || '').replace(/"/g, '""')}"`,
+      `"${Number(o.total_price ?? o.total ?? 0).toFixed(2)}"`,
+      `"${(o.shipping_address || o.address || o.user?.address || '').replace(/"/g, '""')}"`,
     ]);
 
     const csvContent =
@@ -333,9 +336,12 @@ const ManageOrders = ({ className = '' }) => {
               <tbody className="divide-y divide-slate-100">
                 {paginatedOrders.map((order) => {
                   const customerName =
-                    typeof order.user === 'object' && order.user?.name
-                      ? order.user.name
-                      : order.user || 'Customer';
+                    typeof order.user === 'object'
+                      ? `${order.user?.first_name || ''} ${order.user?.last_name || ''}`.trim() ||
+                        order.user?.name ||
+                        order.user?.email ||
+                        'Customer'
+                      : order.user ? `Customer #${order.user}` : 'Customer';
 
                   const shortId = String(order.id).slice(0, 8);
                   const isUpdating = updatingOrderId === order.id;
@@ -389,7 +395,7 @@ const ManageOrders = ({ className = '' }) => {
                       {/* Total Amount */}
                       <td className="px-6 py-4 text-right">
                         <div className="font-extrabold text-slate-900">
-                          {formatPrice(order.total)}
+                          {formatPrice(order.total_price ?? order.total)}
                         </div>
                         <div className="text-[11px] text-slate-400 font-medium">
                           {Array.isArray(order.items) ? `${order.items.length} items` : '1 item'}

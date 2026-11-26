@@ -18,8 +18,10 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Destination after login: either attempted location or role-based default
-  const from = location.state?.from?.pathname || null;
+  // Destination after login: either attempted location, redirect query param, or role-based default
+  const searchParams = new URLSearchParams(location.search);
+  const redirectParam = searchParams.get('redirect');
+  const from = redirectParam || location.state?.from?.pathname || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,12 +37,17 @@ const Login = () => {
       const loggedInUser = await login(email.trim(), password);
 
       // Redirect to previous requested page or admin/home based on role
-      if (from) {
+      const isAdminUser = Boolean(
+        loggedInUser?.is_staff ||
+        loggedInUser?.role === 'admin'
+      );
+
+      if (from && from !== '/') {
         navigate(from, { replace: true });
-      } else if (loggedInUser?.is_staff || loggedInUser?.role === 'admin') {
+      } else if (isAdminUser) {
         navigate('/admin/dashboard', { replace: true });
       } else {
-        navigate('/', { replace: true });
+        navigate(from || '/', { replace: true });
       }
     } catch (err) {
       console.error('Login error:', err);

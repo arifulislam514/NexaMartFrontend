@@ -25,9 +25,9 @@ const ProductInfo = ({
   onAddToCart,
   className = '',
 }) => {
+  const [quantity, setQuantity] = useState(1);
   if (!product) return null;
 
-  const [quantity, setQuantity] = useState(1);
   const isOutOfStock = product.stock === 0;
 
   // Resolve category name
@@ -48,7 +48,7 @@ const ProductInfo = ({
 
   const handleAddToCart = () => {
     if (!isOutOfStock && onAddToCart) {
-      onAddToCart(product, quantity);
+      return onAddToCart(product, quantity);
     }
   };
 
@@ -64,14 +64,12 @@ const ProductInfo = ({
 
         <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
           <span
-            className={`flex items-center gap-1.5 ${
-              isOutOfStock ? 'text-red-700' : 'text-emerald-700'
-            }`}
+            className={`flex items-center gap-1.5 ${isOutOfStock ? 'text-red-700' : 'text-emerald-700'
+              }`}
           >
             <div
-              className={`w-2.5 h-2.5 rounded-full ${
-                isOutOfStock ? 'bg-red-600' : 'bg-emerald-600'
-              }`}
+              className={`w-2.5 h-2.5 rounded-full ${isOutOfStock ? 'bg-red-600' : 'bg-emerald-600'
+                }`}
             ></div>
             {isOutOfStock ? 'Out of Stock' : `In Stock (${product.stock})`}
           </span>

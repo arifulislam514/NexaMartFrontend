@@ -8,8 +8,15 @@ import useAuth from '../../hooks/useAuth';
  * Matches the access restricted screen design from nexamart_app.tsx.
  */
 const AdminRoute = ({ children }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { user, isAuthenticated, isAdmin, loading } = useAuth();
   const location = useLocation();
+
+  const isUserAdmin = Boolean(
+    isAdmin ||
+    user?.is_staff ||
+    user?.is_superuser ||
+    user?.role === 'admin'
+  );
 
   if (loading) {
     return (
@@ -26,7 +33,7 @@ const AdminRoute = ({ children }) => {
   }
 
   // Logged in but not an admin -> show restricted screen from nexamart_app.tsx
-  if (!isAdmin) {
+  if (!isUserAdmin) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center animate-fade-in">
         <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mb-6 shadow-sm ring-4 ring-rose-50">

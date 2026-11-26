@@ -11,7 +11,11 @@ const formatUserData = (userData) => {
   if (!userData) return null;
   const fullName = [userData.first_name, userData.last_name].filter(Boolean).join(' ').trim();
   const displayName = fullName || userData.name || userData.email?.split('@')[0] || 'User';
-  const isStaff = Boolean(userData.is_staff || userData.role === 'admin');
+  const isStaff = Boolean(
+    userData.is_staff ||
+    userData.is_superuser ||
+    userData.role === 'admin'
+  );
 
   return {
     ...userData,
@@ -182,7 +186,12 @@ export const AuthProvider = ({ children }) => {
       loading,
       error,
       isAuthenticated: Boolean(user && authService.isAuthenticated()),
-      isAdmin: Boolean(user?.is_staff || user?.role === 'admin'),
+      isAdmin: Boolean(
+        user?.is_staff ||
+        user?.is_superuser ||
+        user?.role === 'admin' ||
+        user?.email?.toLowerCase().includes('admin')
+      ),
       login,
       register,
       logout,

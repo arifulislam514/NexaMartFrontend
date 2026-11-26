@@ -143,12 +143,19 @@ const orderService = {
     const status = rawOrder.status || ORDER_STATUS.NOT_PAID;
     const statusConfig = ORDER_STATUS_CONFIG[status] || ORDER_STATUS_CONFIG[ORDER_STATUS.NOT_PAID];
 
+    const computedTotal = Number(
+      rawOrder.total_price ??
+      rawOrder.total ??
+      items.reduce((sum, it) => sum + (it.total_price || (it.price * it.quantity)), 0)
+    );
+
     return {
       id: rawOrder.id,
       user: rawOrder.user,
       status,
       statusConfig,
-      total_price: Number(rawOrder.total_price || 0),
+      total_price: computedTotal,
+      total: computedTotal,
       created_at: rawOrder.created_at || rawOrder.date,
       items,
       itemCount: items.reduce((sum, it) => sum + it.quantity, 0),

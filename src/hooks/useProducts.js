@@ -30,13 +30,33 @@ export const useProducts = (initialFilters = {}) => {
 
   // Synchronize internal filter state whenever caller props change
   useEffect(() => {
-    setFilters({
-      page: defaultFilterValues.page || 1,
-      search: defaultFilterValues.search || '',
-      category_id: defaultFilterValues.category_id || '',
-      ordering: defaultFilterValues.ordering || '',
-      price__gt: defaultFilterValues.price__gt || '',
-      price__lt: defaultFilterValues.price__lt || '',
+    setFilters((prev) => {
+      const nextPage = defaultFilterValues.page || 1;
+      const nextSearch = defaultFilterValues.search || '';
+      const nextCategory = defaultFilterValues.category_id || '';
+      const nextOrdering = defaultFilterValues.ordering || '';
+      const nextMin = defaultFilterValues.price__gt || '';
+      const nextMax = defaultFilterValues.price__lt || '';
+
+      if (
+        prev.page === nextPage &&
+        prev.search === nextSearch &&
+        prev.category_id === nextCategory &&
+        prev.ordering === nextOrdering &&
+        prev.price__gt === nextMin &&
+        prev.price__lt === nextMax
+      ) {
+        return prev;
+      }
+
+      return {
+        page: nextPage,
+        search: nextSearch,
+        category_id: nextCategory,
+        ordering: nextOrdering,
+        price__gt: nextMin,
+        price__lt: nextMax,
+      };
     });
   }, [
     defaultFilterValues.page,

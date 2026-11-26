@@ -98,18 +98,34 @@ const cartService = {
         const cart = await this.getCart(storedCartId);
         return cart;
       } catch (err) {
-        // If 404 (cart was deleted by checkout or expired), create a fresh cart
-        if (err.response?.status === 404) {
-          console.info('Stored cart expired or was converted to an order. Creating a new cart.');
+        // If 404, 400, or 500 (stored cart deleted, expired, or invalid on backend), clear and create fresh cart
+        if (
+          err.response?.status === 404 ||
+          err.response?.status === 400 ||
+          err.response?.status === 500
+        ) {
+          console.warn('Stored cart invalid or expired on backend. Clearing stored cart ID.', err.response?.status);
           this.clearStoredCartId();
         } else {
-          // Re-throw non-404 errors (e.g. network or 401 unauthenticated)
+          // Re-throw non-recoverable errors (e.g. 401 unauthenticated)
           throw err;
         }
       }
     }
 
-    // Initialize brand new cart
+    // Check if user already has an active cart on backend
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.CARTS.CREATE);
+      const carts = Array.isArray(response.data) ? response.data : response.data?.results || [];
+      if (carts.length > 0 && carts[0]?.id) {
+        this.setStoredCartId(carts[0].id);
+        return carts[0];
+      }
+    } catch {
+      // Fallback if GET /carts/ is not supported or returns error
+    }
+
+    // Initialize brand new cart or retrieve existing via POST /carts/
     return await this.createCart();
   },
 

@@ -88,11 +88,28 @@ export const CartProvider = ({ children }) => {
       let currentCartId = cartId;
       if (!currentCartId) {
         const newCart = await cartService.getOrCreateCart();
-        currentCartId = newCart.id;
+        currentCartId = newCart?.id;
+        if (!currentCartId) {
+          throw new Error('Failed to obtain a valid cart ID.');
+        }
         setCartId(currentCartId);
       }
 
-      await cartService.addItem(currentCartId, product.id, quantity);
+      try {
+        await cartService.addItem(currentCartId, product.id, quantity);
+      } catch (addItemErr) {
+        // If cart expired or deleted on backend (404), recover by fetching/creating active cart and retrying
+        if (addItemErr.response?.status === 404) {
+          cartService.clearStoredCartId();
+          const freshCart = await cartService.getOrCreateCart();
+          currentCartId = freshCart.id;
+          setCartId(currentCartId);
+          await cartService.addItem(currentCartId, product.id, quantity);
+        } else {
+          throw addItemErr;
+        }
+      }
+
       // Refresh cart to get accurate backend totals and snapshots
       const updatedCart = await cartService.getCart(currentCartId);
       setCart(updatedCart);
@@ -170,6 +187,16 @@ export const CartProvider = ({ children }) => {
   };
 
   /**
+   * Reset local cart state in memory without invoking backend DELETE.
+   * Useful after backend already atomically deleted the cart upon order creation.
+   */
+  const resetCart = () => {
+    setCart(null);
+    setCartId(null);
+    cartService.clearStoredCartId();
+  };
+
+  /**
    * Clear the entire cart (e.g. user manually empties cart or on order completion).
    *
    * @returns {Promise<void>}
@@ -183,9 +210,7 @@ export const CartProvider = ({ children }) => {
     } catch (err) {
       console.error('Failed to clear cart:', err);
     } finally {
-      setCart(null);
-      setCartId(null);
-      cartService.clearStoredCartId();
+      resetCart();
       setActionLoading(false);
     }
   };
@@ -221,6 +246,7 @@ export const CartProvider = ({ children }) => {
     updateQuantity,
     removeFromCart,
     clearCart,
+    resetCart,
     refreshCart,
   };
 

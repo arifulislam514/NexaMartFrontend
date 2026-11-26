@@ -19,7 +19,7 @@ import ErrorAlert from '../components/Common/ErrorAlert';
 const Checkout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { cartId, items, subtotal, loading: cartLoading } = useCart();
+  const { cartId, items, subtotal, loading: cartLoading, resetCart } = useCart();
   const { placeOrder, actionLoading, error: orderError } = useOrders({ autoFetch: false });
 
   // Form State initialized with logged-in user details if present
@@ -96,6 +96,9 @@ const Checkout = () => {
     setSubmitError(null);
     try {
       const createdOrder = await placeOrder(cartId);
+      if (resetCart) {
+        resetCart();
+      }
 
       // On successful order placement, navigate to order history page with state
       navigate('/orders', {

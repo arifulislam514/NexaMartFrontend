@@ -64,9 +64,11 @@ const AddToCartButton = ({
     if (onClick) {
       try {
         setInternalLoading(true);
-        await onClick(product, quantity);
-        setIsSuccess(true);
-        setTimeout(() => setIsSuccess(false), 2000);
+        const res = await onClick(product, quantity);
+        if (res === undefined || res?.success) {
+          setIsSuccess(true);
+          setTimeout(() => setIsSuccess(false), 2000);
+        }
       } catch (err) {
         console.error('Custom onAddToCart handler failed:', err);
       } finally {

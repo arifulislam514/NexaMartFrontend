@@ -30,7 +30,10 @@ import PaymentCancel from '../pages/PaymentCancel';
 // Admin Protected Pages
 import Dashboard from '../pages/Dashboard';
 import ManageProducts from '../components/Dashboard/Admin/ManageProducts';
+import ManageCategories from '../components/Dashboard/Admin/ManageCategories';
 import ManageOrders from '../components/Dashboard/Admin/ManageOrders';
+import ManageReviews from '../components/Dashboard/Admin/ManageReviews';
+import ManageUsers from '../components/Dashboard/Admin/ManageUsers';
 
 // Auth Pages
 import Login from '../pages/Login';
@@ -86,7 +89,10 @@ const AppRoutes = () => {
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<Dashboard />} />
           <Route path="/admin/products" element={<ManageProducts />} />
+          <Route path="/admin/categories" element={<ManageCategories />} />
           <Route path="/admin/orders" element={<ManageOrders />} />
+          <Route path="/admin/reviews" element={<ManageReviews />} />
+          <Route path="/admin/users" element={<ManageUsers />} />
         </Route>
       </Route>
 

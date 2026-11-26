@@ -22,11 +22,14 @@ const PaymentSuccess = () => {
   const navigate = useNavigate();
 
   // Extract payment callback parameters
-  const tranId =
-    searchParams.get('tran_id') ||
-    searchParams.get('transaction_id') ||
-    searchParams.get('val_id') ||
-    `TXN-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+  const [tranId] = useState(() => {
+    return (
+      searchParams.get('tran_id') ||
+      searchParams.get('transaction_id') ||
+      searchParams.get('val_id') ||
+      `TXN-${Date.now().toString(36).toUpperCase()}`
+    );
+  });
 
   const orderId =
     searchParams.get('order_id') ||
