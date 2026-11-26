@@ -26,8 +26,12 @@ const ProductImageGallery = ({
     const list = [];
     if (Array.isArray(images) && images.length > 0) {
       images.forEach((img) => {
-        const url = typeof img === 'object' && img?.image ? img.image : img;
+        let url = typeof img === 'object' && img?.image ? img.image : img;
         if (url && typeof url === 'string') {
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            const backendBase = 'http://127.0.0.1:8000';
+            url = url.startsWith('/') ? `${backendBase}${url}` : `${backendBase}/${url}`;
+          }
           list.push(url);
         }
       });

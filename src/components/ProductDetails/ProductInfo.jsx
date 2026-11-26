@@ -20,7 +20,7 @@ import { formatPrice } from '../../utils/formatters';
  */
 const ProductInfo = ({
   product,
-  averageRating = 5,
+  averageRating = 0,
   totalReviews = 0,
   onReviewsClick,
   onAddToCart,
@@ -33,9 +33,10 @@ const ProductInfo = ({
 
   // Resolve category name
   const categoryLabel =
-    typeof product.category === 'object' && product.category?.name
+    product.category_name ||
+    (typeof product.category === 'object' && product.category?.name
       ? product.category.name
-      : product.category_name || (typeof product.category === 'string' ? product.category : 'General');
+      : (typeof product.category === 'string' ? product.category : 'General'));
 
   const handleDecreaseQty = () => {
     setQuantity((prev) => Math.max(1, prev - 1));

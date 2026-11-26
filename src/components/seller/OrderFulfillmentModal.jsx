@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   X,
   Truck,
@@ -122,36 +123,88 @@ const OrderFulfillmentModal = ({ subOrder, onClose, onSuccess }) => {
                 <span className="truncate">{subOrder.buyer_email || 'N/A'}</span>
               </div>
 
-              <div className="sm:col-span-2 p-2.5 bg-white rounded-xl border border-slate-200 text-slate-800 font-medium">
-                <p className="text-[11px] text-slate-400 font-bold uppercase mb-0.5">
-                  Shipping Address
+              <div className="sm:col-span-2 p-3 bg-white rounded-xl border border-slate-200 text-slate-800 font-medium shadow-2xs">
+                <p className="text-[11px] text-slate-400 font-bold uppercase mb-1 flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-emerald-600" /> Shipping Address
                 </p>
-                <p className="text-xs leading-relaxed">{subOrder.buyer_address || 'Address provided at checkout'}</p>
+                <p className="text-xs leading-relaxed font-semibold text-slate-800">
+                  {subOrder.buyer_address && subOrder.buyer_address.trim()
+                    ? subOrder.buyer_address
+                    : 'Address provided at checkout'}
+                </p>
               </div>
             </div>
           </div>
 
           {/* SubOrder Items List */}
           <div>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-              <Package className="w-3.5 h-3.5" /> Items in this Package
-            </h4>
-            <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white">
-              {Array.isArray(subOrder.items) && subOrder.items.map((item) => (
-                <div key={item.id} className="p-3 flex items-center justify-between text-xs">
-                  <div>
-                    <p className="font-bold text-slate-900">{item.product_name}</p>
-                    <p className="text-slate-500 text-[11px]">Qty: {item.quantity} × {formatPrice(item.price)}</p>
-                  </div>
-                  <span className="font-extrabold text-slate-900">
-                    {formatPrice(item.total_price)}
-                  </span>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-2.5">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-indigo-600" /> Items in this Package
+              </h4>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Click title to view product
+              </span>
+            </div>
 
-              <div className="p-3 bg-slate-50 flex items-center justify-between text-xs font-bold border-t border-slate-200">
+            <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
+              {Array.isArray(subOrder.items) && subOrder.items.map((item) => {
+                const prodId = item.product_id || item.product;
+                const prodImg = item.product_image;
+
+                return (
+                  <div key={item.id} className="p-3.5 flex items-center justify-between gap-3 text-xs hover:bg-slate-50/70 transition-colors group">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Product Thumbnail */}
+                      <div className="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0">
+                        {prodImg ? (
+                          <img
+                            src={prodImg}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.src = 'https://placehold.co/100x100?text=Item';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50">
+                            <Package className="w-5 h-5" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Product Title Link & Qty */}
+                      <div className="min-w-0">
+                        {prodId ? (
+                          <Link
+                            to={`/products/${prodId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors flex items-center gap-1.5 hover:underline truncate"
+                            title={`View "${item.product_name}" details (opens in new tab)`}
+                          >
+                            <span className="truncate">{item.product_name}</span>
+                            <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-indigo-600 shrink-0" />
+                          </Link>
+                        ) : (
+                          <p className="font-bold text-slate-900 truncate">{item.product_name}</p>
+                        )}
+                        <p className="text-slate-500 text-[11px] mt-0.5">
+                          Qty: <span className="font-bold text-slate-700">{item.quantity}</span> × {formatPrice(item.price)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="font-extrabold text-slate-900 shrink-0 text-sm">
+                      {formatPrice(item.total_price)}
+                    </span>
+                  </div>
+                );
+              })}
+
+              <div className="p-3.5 bg-slate-50 flex items-center justify-between text-xs font-bold border-t border-slate-200">
                 <span className="text-slate-600">Subtotal:</span>
-                <span className="text-slate-900 text-sm">{formatPrice(subOrder.subtotal)}</span>
+                <span className="text-slate-900 text-sm font-black">{formatPrice(subOrder.subtotal)}</span>
               </div>
             </div>
           </div>

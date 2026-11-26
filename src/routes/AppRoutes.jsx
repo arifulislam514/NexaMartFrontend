@@ -40,6 +40,7 @@ import SellerSettings from '../pages/seller/SellerSettings';
 
 // Admin Protected Pages
 import Dashboard from '../pages/Dashboard';
+import ManageSellers from '../components/Dashboard/Admin/ManageSellers';
 import ManageProducts from '../components/Dashboard/Admin/ManageProducts';
 import ManageCategories from '../components/Dashboard/Admin/ManageCategories';
 import ManageOrders from '../components/Dashboard/Admin/ManageOrders';
@@ -113,9 +114,10 @@ const AppRoutes = () => {
         <Route element={<DashboardLayout />}>
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<Dashboard />} />
+          <Route path="/admin/sellers" element={<ManageSellers />} />
           <Route path="/admin/products" element={<ManageProducts />} />
           <Route path="/admin/categories" element={<ManageCategories />} />
-          <Route path="/admin/orders" element={<ManageOrders />} />
+          <Route path="/admin/orders" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/reviews" element={<ManageReviews />} />
           <Route path="/admin/users" element={<ManageUsers />} />
         </Route>

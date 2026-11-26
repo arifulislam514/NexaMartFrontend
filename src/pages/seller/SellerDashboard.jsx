@@ -17,8 +17,10 @@ import {
   Store,
   Tag,
   Settings,
+  AlertTriangle,
 } from 'lucide-react';
 import sellerService from '../../services/sellerService';
+import productService from '../../services/productService';
 import useAuth from '../../hooks/useAuth';
 import { formatPrice, formatDate } from '../../utils/formatters';
 
@@ -37,6 +39,7 @@ const SellerDashboard = () => {
 
   const [earnings, setEarnings] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -44,13 +47,18 @@ const SellerDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const [earningsData, ordersData] = await Promise.all([
+      const [earningsData, ordersData, productsData] = await Promise.all([
         sellerService.getEarnings(),
         sellerService.getSellerOrders({ page_size: 5 }),
+        sellerService.getSellerProducts({ page_size: 50 }).catch(() => []),
       ]);
       setEarnings(earningsData);
       const ordersList = Array.isArray(ordersData) ? ordersData : ordersData?.results || [];
       setRecentOrders(ordersList);
+
+      const productsList = Array.isArray(productsData) ? productsData : productsData?.results || [];
+      const lowStock = productsList.filter((p) => Number(p.stock) <= 5);
+      setLowStockProducts(lowStock);
     } catch (err) {
       console.error('Failed to load seller dashboard data:', err);
       setError('Failed to load earnings summary. Please refresh.');
@@ -253,79 +261,154 @@ const SellerDashboard = () => {
         </Link>
       </div>
 
-      {/* Recent SubOrders Table */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 className="font-extrabold text-slate-900 text-base">Recent Customer Orders</h3>
-            <p className="text-xs text-slate-500">Latest packages containing your items</p>
+      {/* 2-Column Section: Recent SubOrders (2 cols) & Low Stock Watch (1 col) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Left: Recent Customer Orders */}
+        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-base">Recent Customer Orders</h3>
+              <p className="text-xs text-slate-500">Latest packages containing your items</p>
+            </div>
+
+            <Link
+              to="/seller/orders"
+              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 group"
+            >
+              <span>View All Orders</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
 
-          <Link
-            to="/seller/orders"
-            className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 group"
-          >
-            <span>View All Orders</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
+          {recentOrders.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 text-xs">
+              <Truck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              No customer orders placed yet.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="py-3 px-6">Order ID</th>
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4">Customer</th>
+                    <th className="py-3 px-4">Subtotal</th>
+                    <th className="py-3 px-4">Net Earning</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-6 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {recentOrders.map((o) => (
+                    <tr key={o.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-3.5 px-6 font-mono font-bold text-slate-900">
+                        #{String(o.id).slice(0, 8)}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-500">
+                        {formatDate(o.created_at || o.order_created_at, { format: 'short' })}
+                      </td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-800">
+                        {o.buyer_name || 'Customer'}
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                        {formatPrice(o.subtotal)}
+                      </td>
+                      <td className="py-3.5 px-4 font-extrabold text-emerald-600">
+                        {formatPrice(o.seller_earning)}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="capitalize px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                          {o.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-6 text-right">
+                        <Link
+                          to="/seller/orders"
+                          className="text-emerald-700 font-bold hover:underline"
+                        >
+                          Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {recentOrders.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs">
-            <Truck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            No customer orders placed yet.
+        {/* Right: Low Stock Watch Card */}
+        <div className="lg:col-span-1 bg-white border border-slate-200 rounded-3xl shadow-2xs overflow-hidden flex flex-col">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span>Low Stock Watch</span>
+            </h3>
+            <span
+              className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                lowStockProducts.length > 0
+                  ? 'text-amber-700 bg-amber-50 border-amber-200'
+                  : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+              }`}
+            >
+              {lowStockProducts.length} items
+            </span>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  <th className="py-3 px-6">Order ID</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Subtotal</th>
-                  <th className="py-3 px-4">Net Earning</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-6 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {recentOrders.map((o) => (
-                  <tr key={o.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-3.5 px-6 font-mono font-bold text-slate-900">
-                      #{String(o.id).slice(0, 8)}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-500">
-                      {formatDate(o.created_at || o.order_created_at, { format: 'short' })}
-                    </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-800">
-                      {o.buyer_name || 'Customer'}
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">
-                      {formatPrice(o.subtotal)}
-                    </td>
-                    <td className="py-3.5 px-4 font-extrabold text-emerald-600">
-                      {formatPrice(o.seller_earning)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="capitalize px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                        {o.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-6 text-right">
-                      <Link
-                        to="/seller/orders"
-                        className="text-emerald-700 font-bold hover:underline"
-                      >
-                        Details
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          <div className="p-3 divide-y divide-slate-100 max-h-[360px] overflow-y-auto">
+            {lowStockProducts.length === 0 ? (
+              <div className="py-8 text-center text-slate-400">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-1.5" />
+                <p className="font-bold text-xs text-slate-700">Inventory Healthy</p>
+                <p className="text-[11px] text-slate-400">All your items are well stocked.</p>
+              </div>
+            ) : (
+              lowStockProducts.map((prod) => {
+                const isZero = Number(prod.stock) === 0;
+                const prodImg = productService.getProductImage(prod);
+                return (
+                  <div
+                    key={prod.id}
+                    className="py-3 px-2 flex items-center justify-between gap-3 hover:bg-slate-50 rounded-xl transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                        <img
+                          src={prodImg}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src = 'https://placehold.co/100x100?text=Item';
+                          }}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 truncate max-w-[120px]">
+                          {prod.name}
+                        </h4>
+                        <span
+                          className={`text-[11px] font-extrabold ${
+                            isZero ? 'text-rose-600' : 'text-amber-600'
+                          }`}
+                        >
+                          {isZero ? 'Out of stock' : `Stock: ${prod.stock} left`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link
+                      to="/seller/products"
+                      className="text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg transition-colors shrink-0"
+                    >
+                      Restock
+                    </Link>
+                  </div>
+                );
+              })
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

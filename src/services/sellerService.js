@@ -293,6 +293,15 @@ export const sellerService = {
     const response = await apiClient.post(`/stores/${slug}/reviews/`, data);
     return response.data;
   },
+
+  /**
+   * Delete store review (Admin or Author).
+   * DELETE /api/v1/stores/{slug}/reviews/{reviewId}/
+   */
+  async deleteStoreReview(slug, reviewId) {
+    const response = await apiClient.delete(`/stores/${slug}/reviews/${reviewId}/`);
+    return response.data;
+  },
 };
 
 export default sellerService;

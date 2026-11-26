@@ -81,9 +81,10 @@ export const useProductDetails = (productId, { autoFetch = true } = {}) => {
   // Compute average rating and count
   const { averageRating, totalReviews } = useMemo(() => {
     if (!reviews || reviews.length === 0) {
-      // Fallback to product.rating if provided by backend, else 5.0 default
-      const defaultRating = product?.rating !== undefined ? Number(product.rating) : 5.0;
-      return { averageRating: defaultRating, totalReviews: product?.reviews || 0 };
+      // Fallback to product.rating if provided by backend, else 0 default
+      const defaultRating = product?.rating !== undefined ? Number(product.rating) : 0;
+      const count = product?.reviews_count !== undefined ? Number(product.reviews_count) : (product?.reviews || 0);
+      return { averageRating: defaultRating, totalReviews: count };
     }
 
     const sum = reviews.reduce((acc, curr) => acc + (Number(curr.ratings) || 0), 0);

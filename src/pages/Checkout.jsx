@@ -4,6 +4,7 @@ import { ArrowLeft, ShoppingBag, AlertCircle, CheckCircle } from 'lucide-react';
 import useCart from '../hooks/useCart';
 import useAuth from '../hooks/useAuth';
 import useOrders from '../hooks/useOrders';
+import authService from '../services/authService';
 import CheckoutForm from '../components/Checkout/CheckoutForm';
 import PaymentMethods from '../components/Checkout/PaymentMethods';
 import OrderSummary from '../components/Checkout/OrderSummary';
@@ -96,6 +97,31 @@ const Checkout = () => {
 
     setSubmitError(null);
     try {
+      // 1. Persist the delivery address & contact info to the user profile so the seller receives complete shipping info
+      const fullDeliveryAddress = [
+        formData.address?.trim(),
+        formData.city?.trim(),
+        formData.postalCode?.trim(),
+      ]
+        .filter(Boolean)
+        .join(', ');
+
+      try {
+        const nameParts = (formData.name || '').trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        await authService.updateProfile({
+          address: fullDeliveryAddress,
+          phone_number: formData.phone?.trim(),
+          ...(firstName ? { first_name: firstName } : {}),
+          ...(lastName ? { last_name: lastName } : {}),
+        });
+      } catch (profileErr) {
+        console.warn('Failed to persist checkout delivery address to profile:', profileErr);
+      }
+
+      // 2. Place atomic order
       const createdOrder = await placeOrder(cartId);
       if (resetCart) {
         resetCart();

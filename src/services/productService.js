@@ -287,13 +287,18 @@ const productService = {
    */
   getProductImage(product, fallback = 'https://placehold.co/600x600/4F46E5/ffffff?text=NexaMart') {
     if (!product) return fallback;
+    let url = null;
     if (product.images && product.images.length > 0 && product.images[0].image) {
-      return product.images[0].image;
+      url = product.images[0].image;
+    } else if (product.image) {
+      url = product.image;
     }
-    if (product.image) {
-      return product.image;
+    if (!url) return fallback;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
     }
-    return fallback;
+    const backendBase = 'http://127.0.0.1:8000';
+    return url.startsWith('/') ? `${backendBase}${url}` : `${backendBase}/${url}`;
   },
 };
 

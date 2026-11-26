@@ -13,9 +13,11 @@ import {
   X,
   Clock,
   DollarSign,
+  Store,
 } from 'lucide-react';
 import { useOrders } from '../../../hooks/useOrders';
 import useAuth from '../../../hooks/useAuth';
+import adminService from '../../../services/adminService';
 import { formatPrice, formatDate } from '../../../utils/formatters';
 
 /**
@@ -30,8 +32,24 @@ const ManageUsers = ({ className = '' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [sellers, setSellers] = useState([]);
 
-  // Aggregate unique customers from orders and current user
+  useEffect(() => {
+    let isMounted = true;
+    const loadSellers = async () => {
+      try {
+        const data = await adminService.getSellers();
+        const list = Array.isArray(data) ? data : data?.results || [];
+        if (isMounted) setSellers(list);
+      } catch (e) {
+        // Silently handle
+      }
+    };
+    loadSellers();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Aggregate unique users across buyers, sellers, and admin staff
   const customers = useMemo(() => {
     const customerMap = new Map();
 
@@ -44,10 +62,34 @@ const ManageUsers = ({ className = '' }) => {
         phone: currentAdmin.phone_number || 'N/A',
         address: currentAdmin.address || 'Headquarters',
         is_staff: true,
+        is_seller: false,
         orderCount: 0,
         totalSpent: 0,
         orders: [],
         lastActive: new Date().toISOString(),
+      });
+    }
+
+    // Add registered sellers
+    if (Array.isArray(sellers)) {
+      sellers.forEach((seller) => {
+        if (!seller.user_email) return;
+        customerMap.set(seller.user_email, {
+          id: seller.user || `seller-${seller.id}`,
+          name: seller.user_name || seller.store_name,
+          email: seller.user_email,
+          phone: seller.phone || 'N/A',
+          address: `Store: ${seller.store_name}`,
+          is_staff: false,
+          is_seller: true,
+          store_name: seller.store_name,
+          store_slug: seller.slug,
+          seller_status: seller.status,
+          orderCount: 0,
+          totalSpent: 0,
+          orders: [],
+          lastActive: seller.created_at,
+        });
       });
     }
 
@@ -81,6 +123,7 @@ const ManageUsers = ({ className = '' }) => {
             phone,
             address,
             is_staff: isStaffUser,
+            is_seller: false,
             orderCount: 1,
             totalSpent: Number(order.total_price || order.total || 0),
             orders: [order],
@@ -98,7 +141,7 @@ const ManageUsers = ({ className = '' }) => {
     }
 
     return Array.from(customerMap.values());
-  }, [orders, currentAdmin]);
+  }, [orders, currentAdmin, sellers]);
 
   // Metrics
   const { totalCustomers, totalLtv, avgSpent } = useMemo(() => {
@@ -114,8 +157,10 @@ const ManageUsers = ({ className = '' }) => {
 
     if (roleFilter === 'admin') {
       list = list.filter((c) => c.is_staff);
+    } else if (roleFilter === 'seller') {
+      list = list.filter((c) => c.is_seller);
     } else if (roleFilter === 'customer') {
-      list = list.filter((c) => !c.is_staff);
+      list = list.filter((c) => !c.is_staff && !c.is_seller);
     }
 
     if (searchQuery.trim()) {
@@ -163,7 +208,7 @@ const ManageUsers = ({ className = '' }) => {
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase text-slate-400">Total Customers</p>
+            <p className="text-xs font-bold uppercase text-slate-400">Total Users</p>
             <h3 className="text-2xl font-black text-slate-900">{totalCustomers}</h3>
           </div>
         </div>
@@ -211,8 +256,9 @@ const ManageUsers = ({ className = '' }) => {
               className="bg-white border border-slate-300 text-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 px-3.5 py-2 outline-none font-medium cursor-pointer shadow-2xs"
             >
               <option value="all">All Roles</option>
-              <option value="customer">Customers Only</option>
-              <option value="admin">Admin / Staff</option>
+              <option value="customer">Shoppers / Customers</option>
+              <option value="seller">Marketplace Sellers</option>
+              <option value="admin">Platform Staff</option>
             </select>
           </div>
         </div>
@@ -300,12 +346,20 @@ const ManageUsers = ({ className = '' }) => {
                       {/* Role Badge */}
                       <td className="px-6 py-4 text-center">
                         {cust.is_staff ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
                             <ShieldCheck className="w-3 h-3" />
                             <span>Staff</span>
                           </span>
+                        ) : cust.is_seller ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200"
+                            title={`Store: ${cust.store_name} (${cust.seller_status || 'verified'})`}
+                          >
+                            <Store className="w-3 h-3 text-amber-600" />
+                            <span className="max-w-[100px] truncate">{cust.store_name}</span>
+                          </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Customer</span>
                           </span>

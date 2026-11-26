@@ -38,6 +38,8 @@ const SellerSettings = () => {
   const [description, setDescription] = useState('');
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState('');
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState('');
 
   // Fetch current store profile
   useEffect(() => {
@@ -53,7 +55,12 @@ const SellerSettings = () => {
           setPhone(data.phone || '');
           setDescription(data.description || '');
           if (data.logo) {
-            setLogoPreview(data.logo);
+            const logoUrl = data.logo.startsWith('http') ? data.logo : `http://127.0.0.1:8000${data.logo}`;
+            setLogoPreview(logoUrl);
+          }
+          if (data.cover_image) {
+            const coverUrl = data.cover_image.startsWith('http') ? data.cover_image : `http://127.0.0.1:8000${data.cover_image}`;
+            setCoverPreview(coverUrl);
           }
         }
       } catch (err) {
@@ -87,6 +94,19 @@ const SellerSettings = () => {
     }
   };
 
+  const handleCoverChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Cover banner file size must be under 5MB.');
+        return;
+      }
+      setCoverFile(file);
+      setCoverPreview(URL.createObjectURL(file));
+      setError(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!storeName.trim() || !phone.trim()) {
@@ -105,6 +125,9 @@ const SellerSettings = () => {
       formData.append('description', description.trim());
       if (logoFile) {
         formData.append('logo', logoFile);
+      }
+      if (coverFile) {
+        formData.append('cover_image', coverFile);
       }
 
       const updated = await sellerService.updateProfile(formData);
@@ -223,6 +246,60 @@ const SellerSettings = () => {
         {/* Right 2 cols: Edit Form */}
         <div className="md:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xs">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Store Cover Image / Banner */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-bold text-slate-800">
+                  Store Cover Banner
+                </label>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Recommended: 1200 × 400px (max 5MB)
+                </span>
+              </div>
+
+              <div className="relative rounded-2xl overflow-hidden border-2 border-dashed border-slate-300 bg-slate-50 group hover:border-emerald-500 transition-colors">
+                {coverPreview ? (
+                  <div className="relative h-36 sm:h-44 w-full">
+                    <img
+                      src={coverPreview}
+                      alt="Store Cover Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white/95 text-slate-800 font-bold text-xs rounded-xl shadow-lg hover:bg-white transition-all">
+                        <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Change Cover Banner</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCoverChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="h-36 sm:h-44 w-full flex flex-col items-center justify-center cursor-pointer p-4 hover:bg-slate-100/60 transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 shadow-2xs">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-700">
+                      Upload Store Cover Banner
+                    </span>
+                    <span className="text-[11px] text-slate-400 mt-0.5">
+                      Displays across the top background of your public storefront
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCoverChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
             {/* Store Logo */}
             <div>
               <label className="block text-sm font-bold text-slate-800 mb-2">

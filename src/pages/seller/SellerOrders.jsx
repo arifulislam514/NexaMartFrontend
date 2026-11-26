@@ -13,6 +13,7 @@ import {
   Calendar,
   User,
   Phone,
+  MapPin,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -283,6 +284,12 @@ const SellerOrders = () => {
                         <p className="text-[11px] text-slate-500 truncate max-w-[150px]">
                           {order.buyer_phone || order.buyer_email || 'N/A'}
                         </p>
+                        {order.buyer_address && (
+                          <p className="text-[11px] text-slate-500 truncate max-w-[160px] flex items-center gap-1 mt-0.5" title={order.buyer_address}>
+                            <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+                            <span className="truncate">{order.buyer_address}</span>
+                          </p>
+                        )}
                       </td>
 
                       {/* Package Items */}

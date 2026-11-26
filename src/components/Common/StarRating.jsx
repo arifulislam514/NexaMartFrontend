@@ -86,8 +86,8 @@ const StarRating = ({
 
       {/* Reviews count label */}
       {!interactive && reviewsCount !== undefined && (
-        <span className="text-xs text-slate-400 font-medium">
-          ({reviewsCount})
+        <span className="text-xs text-slate-500 font-semibold">
+          ({reviewsCount} {reviewsCount === 1 ? 'review' : 'reviews'})
         </span>
       )}
     </div>

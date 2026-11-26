@@ -14,6 +14,7 @@ import {
   Package,
   ChevronLeft,
   ChevronRight,
+  Store,
 } from 'lucide-react';
 import { useOrders } from '../../../hooks/useOrders';
 import OrderStatusBadge from '../../Orders/OrderStatusBadge';
@@ -400,6 +401,20 @@ const ManageOrders = ({ className = '' }) => {
                         <div className="text-[11px] text-slate-400 font-medium">
                           {Array.isArray(order.items) ? `${order.items.length} items` : '1 item'}
                         </div>
+                        {Array.isArray(order.sub_orders) && order.sub_orders.length > 0 && (
+                          <div className="flex flex-wrap justify-end gap-1 mt-1">
+                            {order.sub_orders.map((sub) => (
+                              <span
+                                key={sub.id}
+                                className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100 inline-flex items-center gap-1"
+                                title={`Sub-order: ${sub.seller_store_name || 'Vendor'} (${sub.status})`}
+                              >
+                                <Store className="w-2.5 h-2.5 text-indigo-500" />
+                                <span className="max-w-[90px] truncate">{sub.seller_store_name || 'Vendor'}</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
 
                       {/* Live Status Badge & Fulfill Dropdown */}

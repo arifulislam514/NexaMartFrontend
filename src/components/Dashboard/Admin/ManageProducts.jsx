@@ -15,8 +15,11 @@ import {
   ChevronRight,
   Loader2,
   Filter,
+  Store,
+  ExternalLink,
 } from 'lucide-react';
 import productService from '../../../services/productService';
+import adminService from '../../../services/adminService';
 import { useCategories } from '../../../hooks/useCategories';
 import { formatPrice } from '../../../utils/formatters';
 import ProductForm from './ProductForm';
@@ -47,6 +50,8 @@ const ManageProducts = ({ onAddNew, onEdit, className = '' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStockFilter, setSelectedStockFilter] = useState('all');
+  const [selectedSellerFilter, setSelectedSellerFilter] = useState('all');
+  const [sellersList, setSellersList] = useState([]);
   const [sortBy, setSortBy] = useState('newest');
 
   // Pagination states
@@ -119,20 +124,50 @@ const ManageProducts = ({ onAddNew, onEdit, className = '' }) => {
     fetchProducts();
   }, [fetchProducts]);
 
-  // Client-side stock filtering
+  // Load registered sellers for vendor filtering
+  useEffect(() => {
+    let isMounted = true;
+    const loadVendors = async () => {
+      try {
+        const data = await adminService.getSellers();
+        const list = Array.isArray(data) ? data : data?.results || [];
+        if (isMounted) {
+          setSellersList(list);
+        }
+      } catch (e) {
+        // Silently handle
+      }
+    };
+    loadVendors();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Client-side stock and vendor filtering
   const filteredProducts = useMemo(() => {
     if (!products || products.length === 0) return [];
+    let list = products;
+
+    if (selectedSellerFilter !== 'all') {
+      if (selectedSellerFilter === 'in_house') {
+        list = list.filter((p) => !p.seller);
+      } else {
+        list = list.filter((p) => p.seller && String(p.seller.id) === String(selectedSellerFilter));
+      }
+    }
+
     if (selectedStockFilter === 'low_stock') {
-      return products.filter((p) => Number(p.stock) <= 5 && Number(p.stock) > 0);
+      return list.filter((p) => Number(p.stock) <= 5 && Number(p.stock) > 0);
     }
     if (selectedStockFilter === 'out_of_stock') {
-      return products.filter((p) => Number(p.stock) === 0);
+      return list.filter((p) => Number(p.stock) === 0);
     }
     if (selectedStockFilter === 'in_stock') {
-      return products.filter((p) => Number(p.stock) > 0);
+      return list.filter((p) => Number(p.stock) > 0);
     }
-    return products;
-  }, [products, selectedStockFilter]);
+    return list;
+  }, [products, selectedStockFilter, selectedSellerFilter]);
 
   // Bulk selection toggles
   const handleSelectAll = (e) => {
@@ -298,6 +333,21 @@ const ManageProducts = ({ onAddNew, onEdit, className = '' }) => {
               ))}
             </select>
 
+            {/* Vendor Filter Dropdown */}
+            <select
+              value={selectedSellerFilter}
+              onChange={(e) => setSelectedSellerFilter(e.target.value)}
+              className="flex-1 sm:flex-none bg-white border border-slate-300 text-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 px-3.5 py-2 outline-none font-medium cursor-pointer shadow-2xs"
+            >
+              <option value="all">All Vendors</option>
+              <option value="in_house">In-House Platform</option>
+              {sellersList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.store_name}
+                </option>
+              ))}
+            </select>
+
             {/* Stock Filter Dropdown */}
             <select
               value={selectedStockFilter}
@@ -402,6 +452,7 @@ const ManageProducts = ({ onAddNew, onEdit, className = '' }) => {
                     />
                   </th>
                   <th className="px-6 py-4">Product</th>
+                  <th className="px-6 py-4">Vendor</th>
                   <th className="px-6 py-4">Category</th>
                   <th className="px-6 py-4">Price</th>
                   <th className="px-6 py-4">Stock</th>
@@ -416,10 +467,11 @@ const ManageProducts = ({ onAddNew, onEdit, className = '' }) => {
                   const thumb = productService.getProductImage(product);
 
                   const categoryLabel =
-                    typeof product.category === 'object' && product.category?.name
+                    product.category_name ||
+                    (typeof product.category === 'object' && product.category?.name
                       ? product.category.name
-                      : product.category_name ||
-                        (typeof product.category === 'string' ? product.category : 'General');
+                      : categories.find((c) => String(c.id) === String(product.category))?.name ||
+                        (typeof product.category === 'string' ? product.category : 'General'));
 
                   return (
                     <tr
@@ -465,6 +517,26 @@ const ManageProducts = ({ onAddNew, onEdit, className = '' }) => {
                             </span>
                           </div>
                         </div>
+                      </td>
+
+                      {/* Vendor Badge */}
+                      <td className="px-6 py-4">
+                        {product.seller ? (
+                          <Link
+                            to={`/stores/${product.seller.slug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-colors"
+                            title={`View ${product.seller.store_name} storefront`}
+                          >
+                            <Store className="w-3.5 h-3.5 text-indigo-500" />
+                            <span className="truncate max-w-[130px]">{product.seller.store_name}</span>
+                          </Link>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200/60">
+                            In-House
+                          </span>
+                        )}
                       </td>
 
                       {/* Category Badge */}

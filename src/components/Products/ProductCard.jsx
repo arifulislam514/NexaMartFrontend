@@ -32,13 +32,14 @@ const ProductCard = ({ product, onAddToCart }) => {
 
   // Extract category display string safely
   const categoryLabel =
-    typeof product.category === 'object' && product.category?.name
+    product.category_name ||
+    (typeof product.category === 'object' && product.category?.name
       ? product.category.name
-      : product.category_name || (typeof product.category === 'string' ? product.category : 'General');
+      : (typeof product.category === 'string' ? product.category : 'General'));
 
-  // Rating fallback if not computed on backend yet
-  const ratingValue = product.rating !== undefined ? Number(product.rating) : 4.8;
-  const reviewsCount = product.reviews !== undefined ? product.reviews : (product.reviews_count || 0);
+  // Strictly use database computed ratings and reviews
+  const ratingValue = Number(product.rating || 0);
+  const reviewsCount = Number(product.reviews_count ?? product.reviews ?? 0);
 
   const handleAddToCartClick = async (e) => {
     e.preventDefault();
@@ -109,13 +110,17 @@ const ProductCard = ({ product, onAddToCart }) => {
 
       {/* Product Content Details */}
       <div className="p-5 flex flex-col flex-1">
-        {/* Star Rating */}
-        <div className="mb-2">
+        {/* Star Rating & Review Count */}
+        <div className="mb-2 flex items-center gap-1.5 flex-wrap">
           <StarRating
             rating={ratingValue}
             reviewsCount={reviewsCount}
+            showValue={ratingValue > 0}
             size="sm"
           />
+          {reviewsCount === 0 && (
+            <span className="text-xs text-slate-400 font-normal">No reviews yet</span>
+          )}
         </div>
 
         {/* Product Title */}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
+import adminService from '../../services/adminService';
 
 /**
  * Sidebar Component for Admin Dashboard
@@ -32,12 +33,39 @@ const Sidebar = ({
 }) => {
   const location = useLocation();
   const { logout } = useAuth();
+  const [pendingSellersCount, setPendingSellersCount] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPendingSellers = async () => {
+      try {
+        const data = await adminService.getSellers({ status: 'pending' });
+        const list = Array.isArray(data) ? data : data?.results || [];
+        if (isMounted) {
+          setPendingSellersCount(list.length);
+        }
+      } catch (err) {
+        // Silently catch in sidebar
+      }
+    };
+    fetchPendingSellers();
+    return () => {
+      isMounted = false;
+    };
+  }, [location.pathname]);
 
   const menuItems = [
     {
       path: '/admin/dashboard',
       icon: LayoutDashboard,
       label: 'Dashboard',
+    },
+    {
+      path: '/admin/sellers',
+      icon: Store,
+      label: 'Vendors / Stores',
+      badge: pendingSellersCount > 0 ? pendingSellersCount : null,
+      badgeColor: 'bg-amber-500',
     },
     {
       path: '/admin/products',
@@ -50,12 +78,6 @@ const Sidebar = ({
       label: 'Categories',
     },
     {
-      path: '/admin/orders',
-      icon: ClipboardList,
-      label: 'Orders',
-      badge: pendingOrders > 0 ? pendingOrders : null,
-    },
-    {
       path: '/admin/reviews',
       icon: MessageSquare,
       label: 'Reviews',
@@ -63,7 +85,7 @@ const Sidebar = ({
     {
       path: '/admin/users',
       icon: Users,
-      label: 'Customers',
+      label: 'Users & Staff',
     },
   ];
 
@@ -122,22 +144,23 @@ const Sidebar = ({
               key={item.path}
               to={item.path}
               onClick={handleLinkClick}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-medium text-sm ${
-                isActive
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-medium text-sm ${isActive
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-semibold'
                   : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Icon
-                  className={`w-5 h-5 transition-colors ${
-                    isActive ? 'text-white' : 'text-slate-400'
-                  }`}
+                  className={`w-5 h-5 transition-colors ${isActive ? 'text-white' : 'text-slate-400'
+                    }`}
                 />
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                <span
+                  className={`${item.badgeColor || 'bg-rose-500'
+                    } text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm`}
+                >
                   {item.badge}
                 </span>
               )}
