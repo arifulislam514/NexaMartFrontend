@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import authService from '../services/authService';
+import sellerService from '../services/sellerService';
 
 export const AuthContext = createContext(null);
 
@@ -30,8 +31,33 @@ export const AuthProvider = ({ children }) => {
     const cachedUser = authService.getStoredUser();
     return cachedUser ? formatUserData(cachedUser) : null;
   });
+  const [sellerProfile, setSellerProfile] = useState(null);
+  const [sellerLoading, setSellerLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  /**
+   * Fetch current authenticated user's seller profile if exists
+   */
+  const loadSellerProfile = useCallback(async () => {
+    if (!authService.isAuthenticated()) {
+      setSellerProfile(null);
+      return null;
+    }
+
+    try {
+      setSellerLoading(true);
+      const profile = await sellerService.getProfile();
+      setSellerProfile(profile);
+      return profile;
+    } catch (err) {
+      // 404 or other error means user doesn't have a seller profile yet
+      setSellerProfile(null);
+      return null;
+    } finally {
+      setSellerLoading(false);
+    }
+  }, []);
 
   /**
    * Fetch current user profile on app load if token exists
@@ -39,6 +65,7 @@ export const AuthProvider = ({ children }) => {
   const loadUser = useCallback(async () => {
     if (!authService.isAuthenticated()) {
       setUser(null);
+      setSellerProfile(null);
       setLoading(false);
       return;
     }
@@ -46,7 +73,10 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const profile = await authService.getCurrentUser();
+      const [profile] = await Promise.all([
+        authService.getCurrentUser(),
+        loadSellerProfile(),
+      ]);
       setUser(formatUserData(profile));
     } catch (err) {
       console.error('Failed to load user profile:', err);
@@ -54,19 +84,20 @@ export const AuthProvider = ({ children }) => {
       if (err.response?.status === 401) {
         authService.logout();
         setUser(null);
+        setSellerProfile(null);
       }
       setError(err.response?.data?.detail || 'Failed to authenticate session');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadSellerProfile]);
 
   useEffect(() => {
     loadUser();
   }, [loadUser]);
 
   /**
-   * Log in user with email & password, then load profile.
+   * Log in user with email & password, then load profile and seller profile.
    *
    * @param {string} email
    * @param {string} password
@@ -77,7 +108,10 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       await authService.login({ email, password });
-      const profile = await authService.getCurrentUser();
+      const [profile] = await Promise.all([
+        authService.getCurrentUser(),
+        loadSellerProfile(),
+      ]);
       const formatted = formatUserData(profile);
       setUser(formatted);
       return formatted;
@@ -129,6 +163,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     authService.logout();
     setUser(null);
+    setSellerProfile(null);
     setError(null);
   }, []);
 
@@ -180,9 +215,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const isSeller = Boolean(sellerProfile);
+  const isApprovedSeller = Boolean(sellerProfile && sellerProfile.status === 'approved');
+  const isPendingSeller = Boolean(sellerProfile && sellerProfile.status === 'pending');
+
   const value = useMemo(
     () => ({
       user,
+      sellerProfile,
+      sellerLoading,
+      isSeller,
+      isApprovedSeller,
+      isPendingSeller,
       loading,
       error,
       isAuthenticated: Boolean(user && authService.isAuthenticated()),
@@ -198,8 +242,21 @@ export const AuthProvider = ({ children }) => {
       updateProfile,
       changePassword,
       refreshProfile: loadUser,
+      refreshSellerProfile: loadSellerProfile,
     }),
-    [user, loading, error, logout, loadUser]
+    [
+      user,
+      sellerProfile,
+      sellerLoading,
+      isSeller,
+      isApprovedSeller,
+      isPendingSeller,
+      loading,
+      error,
+      logout,
+      loadUser,
+      loadSellerProfile,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

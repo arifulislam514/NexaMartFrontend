@@ -1,11 +1,12 @@
-import React from 'react';
-import { ShieldCheck, Lock, CheckCircle, Loader2, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldCheck, Lock, CheckCircle, Loader2, ArrowRight, Tag } from 'lucide-react';
 import { formatPrice } from '../../utils/formatters';
 import productService from '../../services/productService';
+import CouponApplyBox from '../Common/CouponApplyBox';
 
 /**
  * OrderSummary Component
- * Order breakdown card displaying line items, shipping estimate, VAT inclusion, and checkout trigger.
+ * Order breakdown card displaying line items, coupon deduction, shipping estimate, VAT inclusion, and checkout trigger.
  * Strictly adheres to nexamart_app.tsx design.
  *
  * @param {Object} props
@@ -15,6 +16,7 @@ import productService from '../../services/productService';
  * @param {Function} props.onPlaceOrder - Order placement callback
  * @param {boolean} [props.loading=false] - Submission loading state
  * @param {boolean} [props.disabled=false]
+ * @param {Object} [props.initialCoupon] - Pre-applied coupon from cart page
  * @param {string} [props.className='']
  */
 const OrderSummary = ({
@@ -24,10 +26,14 @@ const OrderSummary = ({
   onPlaceOrder,
   loading = false,
   disabled = false,
+  initialCoupon = null,
   className = '',
 }) => {
+  const [appliedCoupon, setAppliedCoupon] = useState(initialCoupon);
+
+  const discountAmount = appliedCoupon?.discount_amount ? Number(appliedCoupon.discount_amount) : 0;
   const finalShipping = subtotal > 0 ? shipping : 0;
-  const grandTotal = subtotal + finalShipping;
+  const grandTotal = Math.max(0, subtotal - discountAmount) + finalShipping;
   const itemCount = items.reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
 
   return (
@@ -42,14 +48,14 @@ const OrderSummary = ({
       </div>
 
       {/* Cart Items Thumbnail List */}
-      <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto mb-6 pr-1 space-y-2">
+      <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto mb-6 pr-1 space-y-2">
         {items.map((item) => {
           const product = item.product || {};
           const itemImg = productService.getProductImage(product);
           const lineTotal =
             item.total_price !== undefined
               ? Number(item.total_price)
-              : Number(product.price || 0) * (item.quantity || 1);
+              : Number(item.price || product.price || 0) * (item.quantity || 1);
 
           return (
             <div key={item.id} className="pt-2 first:pt-0 flex items-center gap-3">
@@ -60,15 +66,17 @@ const OrderSummary = ({
                   className="w-full h-full object-cover"
                 />
               </div>
+
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-xs sm:text-sm text-slate-900 truncate">
+                <h4 className="font-semibold text-slate-900 text-sm truncate">
                   {product.name}
                 </h4>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Qty: {item.quantity} &times; {formatPrice(product.price)}
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Qty: {item.quantity} &bull; {formatPrice(item.price || product.price)}
                 </p>
               </div>
-              <div className="text-right font-bold text-xs sm:text-sm text-slate-900">
+
+              <div className="text-xs font-bold text-slate-900">
                 {formatPrice(lineTotal)}
               </div>
             </div>
@@ -76,12 +84,30 @@ const OrderSummary = ({
         })}
       </div>
 
-      {/* Cost Calculations */}
+      {/* Coupon Apply Box */}
+      <div className="mb-6 pb-6 border-b border-slate-100">
+        <CouponApplyBox
+          cartAmount={subtotal}
+          appliedCoupon={appliedCoupon}
+          onCouponApplied={(c) => setAppliedCoupon(c)}
+        />
+      </div>
+
+      {/* Financial Calculations */}
       <div className="space-y-3 mb-6 text-sm border-t border-slate-100 pt-4">
         <div className="flex justify-between text-slate-600">
           <span>Subtotal</span>
           <span className="font-semibold text-slate-900">{formatPrice(subtotal)}</span>
         </div>
+
+        {discountAmount > 0 && (
+          <div className="flex justify-between text-emerald-600 font-semibold animate-fade-in">
+            <span className="flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5" /> Discount ({appliedCoupon.code})
+            </span>
+            <span>-{formatPrice(discountAmount)}</span>
+          </div>
+        )}
 
         <div className="flex justify-between text-slate-600">
           <span>Shipping Fee</span>
@@ -108,7 +134,7 @@ const OrderSummary = ({
         type="button"
         onClick={onPlaceOrder}
         disabled={loading || disabled || items.length === 0}
-        className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4 flex items-center justify-center gap-2"
+        className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4 flex items-center justify-center gap-2 cursor-pointer"
         aria-label="Confirm & Place Order"
       >
         {loading ? (

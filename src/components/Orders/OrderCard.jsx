@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CheckCircle2, XCircle, Eye, AlertCircle, Copy, Check, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2, XCircle, Eye, AlertCircle, Copy, Check, Loader2, Truck, Store } from 'lucide-react';
 import OrderStatusBadge from './OrderStatusBadge';
 import { formatPrice, formatDate } from '../../utils/formatters';
 import { ORDER_TRACKER_STEPS, ORDER_STATUS } from '../../utils/constants';
@@ -209,6 +210,64 @@ const OrderCard = ({
             );
           })}
         </div>
+
+        {/* Multi-Vendor Packages Breakdown */}
+        {Array.isArray(order.sub_orders) && order.sub_orders.length > 0 && (
+          <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Merchant Packages ({order.sub_orders.length})</span>
+              </span>
+              <span className="text-[11px] text-slate-400">Shipped directly by independent sellers</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {order.sub_orders.map((sub) => {
+                const subStatus = (sub.status || '').toLowerCase();
+                const badgeClass =
+                  subStatus === 'delivered'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : subStatus === 'shipped'
+                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                    : subStatus === 'confirmed'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : subStatus === 'canceled'
+                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200';
+
+                return (
+                  <div
+                    key={sub.id}
+                    className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        to={sub.seller_slug ? `/stores/${sub.seller_slug}` : '#'}
+                        className="font-bold text-slate-900 text-xs hover:text-indigo-600 transition-colors block truncate"
+                      >
+                        {sub.seller_store_name || 'Merchant'}
+                      </Link>
+                      {sub.tracking_number ? (
+                        <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+                          Tracking: <span className="font-semibold text-slate-800">{sub.tracking_number}</span>
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 italic mt-0.5">Tracking code pending</p>
+                      )}
+                    </div>
+
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border capitalize shrink-0 ${badgeClass}`}
+                    >
+                      {sub.status || 'Pending'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* 4. Action Buttons Footer */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-100 flex-wrap gap-3">

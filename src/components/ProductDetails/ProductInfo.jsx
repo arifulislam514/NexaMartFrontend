@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Truck, RotateCcw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ShieldCheck, Truck, RotateCcw, Store } from 'lucide-react';
 import StarRating from '../Common/StarRating';
 import AddToCartButton from './AddToCartButton';
 import { formatPrice } from '../../utils/formatters';
@@ -77,9 +78,30 @@ const ProductInfo = ({
       </div>
 
       {/* Product Title */}
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
+      <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
         {product.name}
       </h1>
+
+      {/* Sold By Seller Badge */}
+      {product.seller && (
+        <div className="mb-4">
+          <Link
+            to={`/stores/${product.seller.slug}`}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-colors group text-xs font-bold shadow-2xs"
+          >
+            <div className="w-5 h-5 rounded-md bg-emerald-200 text-emerald-900 flex items-center justify-center font-bold text-[10px] overflow-hidden flex-shrink-0">
+              {product.seller.logo ? (
+                <img src={product.seller.logo} alt={product.seller.store_name} className="w-full h-full object-cover" />
+              ) : (
+                <Store className="w-3 h-3 text-emerald-700" />
+              )}
+            </div>
+            <span>
+              Sold by: <span className="underline decoration-emerald-400 group-hover:decoration-emerald-700 font-extrabold">{product.seller.store_name}</span>
+            </span>
+          </Link>
+        </div>
+      )}
 
       {/* Star Rating & Reviews Count */}
       <div className="flex items-center gap-3 mb-6">

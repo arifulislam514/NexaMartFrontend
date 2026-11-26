@@ -5,16 +5,20 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
+import SellerDashboardLayout from '../layouts/SellerDashboardLayout';
 
 // Route Protectors
 import PrivateRoute from '../components/Common/PrivateRoute';
 import AdminRoute from '../components/Common/AdminRoute';
+import SellerRoute from '../components/Common/SellerRoute';
 
 // Storefront Pages
 import Home from '../pages/Home';
 import Shop from '../pages/Shop';
 import ProductDetail from '../pages/ProductDetail';
 import About from '../pages/About';
+import BecomeSeller from '../pages/BecomeSeller';
+import StoreDetail from '../pages/StoreDetail';
 
 // Customer Protected Pages
 import Cart from '../pages/Cart';
@@ -26,6 +30,13 @@ import Profile from '../pages/Profile';
 import PaymentSuccess from '../pages/PaymentSuccess';
 import PaymentFail from '../pages/PaymentFail';
 import PaymentCancel from '../pages/PaymentCancel';
+
+// Seller Protected Pages
+import SellerDashboard from '../pages/seller/SellerDashboard';
+import SellerProducts from '../pages/seller/SellerProducts';
+import SellerOrders from '../pages/seller/SellerOrders';
+import SellerCoupons from '../pages/seller/SellerCoupons';
+import SellerSettings from '../pages/seller/SellerSettings';
 
 // Admin Protected Pages
 import Dashboard from '../pages/Dashboard';
@@ -45,7 +56,7 @@ import NotFound from '../pages/NotFound';
 
 /**
  * AppRoutes
- * Comprehensive route configuration matching nexamart_app.tsx structure.
+ * Comprehensive route configuration matching NexaMart multi-vendor structure.
  */
 const AppRoutes = () => {
   return (
@@ -57,6 +68,8 @@ const AppRoutes = () => {
         <Route path="/shop" element={<Navigate to="/products" replace />} />
         <Route path="/products/:id" element={<ProductDetail />} />
         <Route path="/about" element={<About />} />
+        <Route path="/become-seller" element={<BecomeSeller />} />
+        <Route path="/stores/:slug" element={<StoreDetail />} />
 
         {/* Payment Callback Pages */}
         <Route path="/payment/success" element={<PaymentSuccess />} />
@@ -81,6 +94,18 @@ const AppRoutes = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/activate/:uid/:token" element={<ActivateAccount />} />
         <Route path="/activate" element={<ActivateAccount />} />
+      </Route>
+
+      {/* Seller Protected Routes under SellerRoute */}
+      <Route element={<SellerRoute />}>
+        <Route element={<SellerDashboardLayout />}>
+          <Route path="/seller" element={<Navigate to="/seller/dashboard" replace />} />
+          <Route path="/seller/dashboard" element={<SellerDashboard />} />
+          <Route path="/seller/products" element={<SellerProducts />} />
+          <Route path="/seller/orders" element={<SellerOrders />} />
+          <Route path="/seller/coupons" element={<SellerCoupons />} />
+          <Route path="/seller/settings" element={<SellerSettings />} />
+        </Route>
       </Route>
 
       {/* Admin Protected Routes under AdminRoute */}

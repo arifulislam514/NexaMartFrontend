@@ -10,6 +10,8 @@ import {
   Package,
   LogOut,
   ChevronDown,
+  Store,
+  Clock,
 } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import useCart from '../hooks/useCart';
@@ -22,7 +24,7 @@ import useCart from '../hooks/useCart';
  * @param {number} [props.cartCount] - Override cart item count
  */
 const Navbar = ({ cartCount }) => {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isSeller, isApprovedSeller, isPendingSeller } = useAuth();
   const { itemCount } = useCart();
   const effectiveCartCount = cartCount !== undefined ? cartCount : itemCount;
   const navigate = useNavigate();
@@ -124,7 +126,34 @@ const Navbar = ({ cartCount }) => {
           </div>
 
           {/* Right Actions: Cart & User Profile */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* Seller Action Button */}
+            {isApprovedSeller ? (
+              <Link
+                to="/seller/dashboard"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-bold border border-emerald-200 transition-colors shadow-2xs"
+              >
+                <Store className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Seller Dashboard</span>
+              </Link>
+            ) : isPendingSeller ? (
+              <Link
+                to="/become-seller"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-xl text-xs font-bold border border-amber-200 transition-colors shadow-2xs"
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                <span>Application Pending</span>
+              </Link>
+            ) : (
+              <Link
+                to="/become-seller"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-xs font-semibold transition-colors"
+              >
+                <Store className="w-3.5 h-3.5 text-slate-500" />
+                <span>Become a Seller</span>
+              </Link>
+            )}
+
             {/* Cart Button */}
             <Link
               to="/cart"
@@ -182,6 +211,36 @@ const Navbar = ({ cartCount }) => {
                     >
                       <LayoutDashboard className="w-4 h-4 text-indigo-600" />
                       <span>Admin Dashboard</span>
+                    </Link>
+                  )}
+
+                  {/* Seller Dashboard or Application Status in dropdown */}
+                  {isApprovedSeller ? (
+                    <Link
+                      to="/seller/dashboard"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="w-full text-left px-4 py-2 text-sm text-emerald-700 font-semibold hover:bg-emerald-50 flex items-center gap-2.5 transition-colors border-b border-slate-100"
+                    >
+                      <Store className="w-4 h-4 text-emerald-600" />
+                      <span>Seller Dashboard</span>
+                    </Link>
+                  ) : isPendingSeller ? (
+                    <Link
+                      to="/become-seller"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="w-full text-left px-4 py-2 text-sm text-amber-700 font-semibold hover:bg-amber-50 flex items-center gap-2.5 transition-colors border-b border-slate-100"
+                    >
+                      <Clock className="w-4 h-4 text-amber-600" />
+                      <span>Application Pending</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/become-seller"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center gap-2.5 transition-colors border-b border-slate-100"
+                    >
+                      <Store className="w-4 h-4 text-indigo-500" />
+                      <span>Become a Seller</span>
                     </Link>
                   )}
 
@@ -271,6 +330,38 @@ const Navbar = ({ cartCount }) => {
                   </span>
                 )}
               </Link>
+
+              {/* Mobile Seller Link */}
+              <div className="pt-2 border-t border-slate-100">
+                {isApprovedSeller ? (
+                  <Link
+                    to="/seller/dashboard"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-base font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                  >
+                    <Store className="w-5 h-5 text-emerald-600" />
+                    <span>Seller Dashboard</span>
+                  </Link>
+                ) : isPendingSeller ? (
+                  <Link
+                    to="/become-seller"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-base font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                  >
+                    <Clock className="w-5 h-5 text-amber-600" />
+                    <span>Application Pending</span>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/become-seller"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                  >
+                    <Store className="w-5 h-5 text-slate-500" />
+                    <span>Become a Seller</span>
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         )}

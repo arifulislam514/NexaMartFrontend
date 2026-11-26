@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, AlertCircle, CheckCircle } from 'lucide-react';
 import useCart from '../hooks/useCart';
 import useAuth from '../hooks/useAuth';
@@ -18,6 +18,7 @@ import ErrorAlert from '../components/Common/ErrorAlert';
  */
 const Checkout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { cartId, items, subtotal, loading: cartLoading, resetCart } = useCart();
   const { placeOrder, actionLoading, error: orderError } = useOrders({ autoFetch: false });
@@ -206,6 +207,7 @@ const Checkout = () => {
             onPlaceOrder={handlePlaceOrder}
             loading={actionLoading}
             disabled={actionLoading}
+            initialCoupon={location.state?.appliedCoupon}
           />
         </div>
       </div>
